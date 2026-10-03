@@ -57,7 +57,11 @@ export function YoutubeLinkForm({ onBaixado }: YoutubeLinkFormProps) {
         <div className="space-y-1">
           <Progress value={progresso * 100} />
           <p className="text-xs text-muted-foreground">
-            {progresso < 1 ? `Baixando do YouTube... ${Math.round(progresso * 100)}%` : 'Salvando o vídeo...'}
+            {progresso === 0
+              ? 'Conectando ao YouTube...'
+              : progresso < 1
+                ? `Baixando do YouTube... ${Math.round(progresso * 100)}%`
+                : 'Salvando o vídeo...'}
           </p>
         </div>
       )}

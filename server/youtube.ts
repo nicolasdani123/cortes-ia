@@ -85,8 +85,19 @@ function isLinkYoutube(texto: string): boolean {
   }
 }
 
+/**
+ * O YouTube recusou até os dados do vídeo (não só o arquivo): é o IP do servidor que está bloqueado,
+ * comum em servidores na nuvem. Tentar de novo não adianta.
+ */
+function servidorBloqueado(saida: string): boolean {
+  return /Failed to extract any player response/i.test(saida)
+}
+
 /** Traduz os erros mais comuns do yt-dlp para algo que dá para agir. */
 function mensagemDeErro(saida: string): string {
+  if (servidorBloqueado(saida)) {
+    return 'O YouTube está bloqueando o servidor de download. Por enquanto, baixe o vídeo e envie o arquivo.'
+  }
   if (/ffmpeg/i.test(saida) && /not (found|installed)/i.test(saida)) {
     return 'O ffmpeg não foi encontrado no PC. Instale com "winget install Gyan.FFmpeg" e reinicie o npm run dev.'
   }
@@ -134,7 +145,9 @@ async function baixar(job: Job, url: string): Promise<void> {
       await rodarYtDlp(job, url)
       break
     } catch (error) {
-      if (!(error instanceof ErroYtDlp) || !/HTTP Error 403/i.test(error.saida) || tentativa >= TENTATIVAS) throw error
+      const repetir =
+        error instanceof ErroYtDlp && /HTTP Error 403/i.test(error.saida) && !servidorBloqueado(error.saida)
+      if (!repetir || tentativa >= TENTATIVAS) throw error
       console.warn(`[youtube] 403 do YouTube, tentando de novo (${tentativa + 1}/${TENTATIVAS})`)
       if (tentativa === 1) await atualizarYtDlp()
     }
