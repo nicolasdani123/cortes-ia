@@ -1,0 +1,17 @@
+# Blueprint do Render: só o servidor de download do YouTube. O site continua no Firebase.
+services:
+  - type: web
+    name: cortes-ia-youtube
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /saude
+    envVars:
+      - key: ORIGENS_PERMITIDAS
+        value: https://cortes-ia-7e6f4.web.app,https://cortes-ia-7e6f4.firebaseapp.com,http://localhost:5173
+      - key: MAX_DOWNLOADS_SIMULTANEOS
+        value: "1"
+      # Se o YouTube pedir login ("not a bot"): suba um cookies.txt como Secret File chamado
+      # cookies.txt no painel do Render (fica em /etc/secrets/cookies.txt).
+      - key: YTDLP_COOKIES
+        value: /etc/secrets/cookies.txt
