@@ -49,6 +49,8 @@ interface Job {
   titulo: string | null
   duracaoSegundos: number | null
   erro: string | null
+  /** Fim da saída do yt-dlp quando falha, para diagnosticar sem acesso aos logs do servidor. */
+  detalhe: string | null
   pasta: string
   arquivo: string | null
 }
@@ -220,6 +222,7 @@ function criarJob(url: string): Job {
     titulo: null,
     duracaoSegundos: null,
     erro: null,
+    detalhe: null,
     pasta: join(PASTA_TEMP, id),
     arquivo: null,
   }
@@ -228,6 +231,10 @@ function criarJob(url: string): Job {
     console.error('[youtube] download falhou', error)
     job.status = 'ERRO'
     job.erro = error instanceof Error ? error.message : String(error)
+    if (error instanceof ErroYtDlp) {
+      console.error(error.saida)
+      job.detalhe = error.saida.slice(-3000)
+    }
   })
   setTimeout(() => apagarJob(job), VALIDADE_JOB_MS).unref()
   return job
@@ -267,8 +274,8 @@ async function rotear(req: IncomingMessage, res: ServerResponse): Promise<void> 
   if (!job) return responderJson(res, 404, { erro: 'Download não encontrado. Tente de novo.' })
 
   if (!m[2]) {
-    const { status, progresso, titulo, duracaoSegundos, erro } = job
-    return responderJson(res, 200, { status, progresso, titulo, duracaoSegundos, erro })
+    const { status, progresso, titulo, duracaoSegundos, erro, detalhe } = job
+    return responderJson(res, 200, { status, progresso, titulo, duracaoSegundos, erro, detalhe })
   }
 
   if (job.status !== 'PRONTO' || !job.arquivo) {
